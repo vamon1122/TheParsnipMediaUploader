@@ -10,8 +10,9 @@ namespace ParsnipMediaUploader
     {
         public static string GetResponse(string prompt)
         {
+            Console.Write($"\r{string.Empty.LengthenTo(100)}");
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write($"{prompt}: ");
+            Console.Write($"\r{prompt}: ");
             Console.ResetColor();
             Console.CursorVisible = true;
             var response = Console.ReadLine();

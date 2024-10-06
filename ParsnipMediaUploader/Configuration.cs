@@ -12,13 +12,13 @@ namespace ParsnipMediaUploader
     internal static class Configuration
     {
         private static readonly string createdByUserId = ConfigurationManager.AppSettings["CreatedByUserId"];
-        private static readonly string destinationDir = ConfigurationManager.AppSettings["DestinationDir"];
+        private static readonly string backupDir = ConfigurationManager.AppSettings["BackupDir"];
         private static readonly string pauseOnException = ConfigurationManager.AppSettings["PauseOnException"];
         private static readonly string sourceDir = ConfigurationManager.AppSettings["SourceDir"];
         private static readonly string tags = ConfigurationManager.AppSettings["Tags"];
         private static readonly string testConnections = ConfigurationManager.AppSettings["TestConnections"];
         private static readonly string uploadOriginalImages = ConfigurationManager.AppSettings["UploadOriginalImages"];
-        private static readonly string videoDestinationDir = ConfigurationManager.AppSettings["VideoDestinationDirOverride"];
+        private static readonly string videoBackupDir = ConfigurationManager.AppSettings["VideoDestinationDirOverride"];
 
         public static readonly NetworkCredential FtpCredentials = new NetworkCredential(ConfigurationManager.AppSettings["FtpUsername"], ConfigurationManager.AppSettings["FtpPassword"]);
         public static readonly string FtpUrl = ConfigurationManager.AppSettings["FtpUrl"];
@@ -27,28 +27,23 @@ namespace ParsnipMediaUploader
         public static readonly string Website = ConfigurationManager.AppSettings["WebsiteUrl"];
         
         public static int CreatedByUserId { get; private set; }
-        public static string DestinationDir { get; private set; }
+        public static string BackupDir { get; private set; }
         public static List<MediaTag> MediaTags { get; private set; }
         public static bool PauseOnException { get; private set; }
         public static string SourceDir { get; private set; }
         public static bool UploadOriginalImages { get; private set; }
-        public static string VideoDestinationDirOverride { get; private set; }
+        public static string VideoBackupDirOverride { get; private set; }
 
         public static bool Initialize() 
         {
             PauseOnException = getTrueFalse("Pause on exception", pauseOnException);
-
-            if (getTrueFalse("Test connections", testConnections))
-            {
-                validateRemoteConfiguration();
-            }
-            
-            CreatedByUserId = getInt("Created by userId", createdByUserId);
-            DestinationDir = getDestination("Backup destination", destinationDir) ?? SourceDir.EnsureEndsWith('\\');
-            MediaTags = getMediaTags();
+            if (getTrueFalse("Test connections", testConnections)) validateRemoteConfiguration();
             SourceDir = getSource();
+            BackupDir = getDestination("Backup destination", backupDir) ?? SourceDir.EnsureEndsWith('\\');
+            VideoBackupDirOverride = getDestination("Video backup destination override", videoBackupDir) ?? BackupDir;
+            CreatedByUserId = getInt("Created by userId", createdByUserId);
+            MediaTags = getMediaTags();
             UploadOriginalImages = getTrueFalse("Upload original images", uploadOriginalImages);
-            VideoDestinationDirOverride = getDestination("Video backup destination override", videoDestinationDir) ?? DestinationDir;
 
             return true;
 
@@ -61,9 +56,13 @@ namespace ParsnipMediaUploader
 
                 bool getResponse()
                 {
-                    var response = Helpers.GetResponse($"{prompt}? (y/n)").Substring(0, 1).ToLower();
-                    if (response == "y") return true;
-                    if (response == "n") return false;
+                    switch(Helpers.GetResponse($"{prompt}? (y/n)"))
+                    {
+                        case "y":return true;
+                        case "n":return false;
+                    }
+
+                    Console.SetCursorPosition(0, Console.CursorTop - 1);
                     return getResponse();
                 }
             }
@@ -217,7 +216,11 @@ namespace ParsnipMediaUploader
             string getSource()
             {
                 var dir = getDirectory("Source", sourceDir);
-                if (!Directory.Exists(dir)) return getSource();
+                if (!Directory.Exists(dir))
+                {
+                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    return getSource();
+                }
                 return dir;
             }
 

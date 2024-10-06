@@ -6,7 +6,7 @@ namespace ParsnipMediaUploader
     public static class Extensions
     {
         private static bool EndsWith(this string str, char ch) =>
-           str.Substring(str.Length - 1, 1)[0] == ch;
+           str?.Substring(str.Length - 1, 1)[0] == ch;
 
         public static string EnsureEndsWith(this string str, char ch) =>
             str.EndsWith(ch) ? str : str + ch;

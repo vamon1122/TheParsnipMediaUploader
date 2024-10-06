@@ -14,20 +14,19 @@ namespace ParsnipMediaUploader
 
             if (!Configuration.Initialize())
             {
-                
                 Console.ReadLine();
                 return;
             }
 
-            var logDir = $"{Configuration.DestinationDir}progress.log";
-            var successLogDir = $"{Configuration.DestinationDir}success.log";
-            var errorLogDir = $"{Configuration.DestinationDir}error.log";
+            var logDir = $"{Configuration.BackupDir}progress.log";
+            var successLogDir = $"{Configuration.BackupDir}success.log";
+            var errorLogDir = $"{Configuration.BackupDir}error.log";
 
             Helpers.OverwriteWrite($"Creating directories...");
-            Directory.CreateDirectory($"{Configuration.DestinationDir}Originals");
-            Directory.CreateDirectory($"{Configuration.DestinationDir}Compressed");
-            Directory.CreateDirectory($"{Configuration.DestinationDir}Placeholders");
-            Directory.CreateDirectory($"{Configuration.VideoDestinationDirOverride}Originals");
+            Directory.CreateDirectory($"{Configuration.BackupDir}Originals");
+            Directory.CreateDirectory($"{Configuration.BackupDir}Compressed");
+            Directory.CreateDirectory($"{Configuration.BackupDir}Placeholders");
+            Directory.CreateDirectory($"{Configuration.VideoBackupDirOverride}Originals");
             
             Helpers.OverwriteWrite($"Sorting files by date...");
             var files = new DirectoryInfo(Configuration.SourceDir).GetFiles().OrderBy(p => p.DateTimeCreated());
@@ -59,7 +58,7 @@ namespace ParsnipMediaUploader
                             throw new InvalidDataException("The file is empty.");
 
                         var mediaId = MediaId.NewMediaId();
-                        File.Copy(file.FullName, $"{(isImage ? Configuration.DestinationDir : Configuration.VideoDestinationDirOverride)}Originals\\{mediaId}{originalExtension}");
+                        File.Copy(file.FullName, $"{(isImage ? Configuration.BackupDir : Configuration.VideoBackupDirOverride)}Originals\\{mediaId}{originalExtension}");
 
                         (isImage ? processImage() : processVideo()).InsertTags(Configuration.MediaTags);
 
@@ -77,10 +76,10 @@ namespace ParsnipMediaUploader
                                 CreatedById = Configuration.CreatedByUserId
                             };
 
-                            Media.ProcessMediaThumbnail(image, image.Id.ToString(), originalExtension, Configuration.DestinationDir);
+                            Media.ProcessMediaThumbnail(image, image.Id.ToString(), originalExtension, Configuration.BackupDir);
 
                             Helpers.OverwriteWrite($"{currentFile}/{totalFiles} - (Uploading {fileName}...)");
-                            image.Upload(Configuration.DestinationDir, originalExtension);
+                            image.Upload(Configuration.BackupDir, originalExtension);
                             Helpers.OverwriteWrite($"{currentFile}/{totalFiles} - (Inserting metadata for {fileName}...)");
                             if (!image.Insert()) throw new Exception("There was an exception whilst inserting the image into the database.");
 
@@ -97,7 +96,7 @@ namespace ParsnipMediaUploader
                             };
 
                             Helpers.OverwriteWrite($"{currentFile}/{totalFiles} - (Uploading {fileName}...)");
-                            video.Upload(Configuration.VideoDestinationDirOverride, originalExtension);
+                            video.Upload(Configuration.VideoBackupDirOverride, originalExtension);
 
                             Helpers.OverwriteWrite($"{currentFile}/{totalFiles} - (Inserting metadata for {fileName}...)");
                             video.VideoData.OriginalFileDir = $"{video.VideoUploadsDir}Originals/{mediaId}{originalExtension}";

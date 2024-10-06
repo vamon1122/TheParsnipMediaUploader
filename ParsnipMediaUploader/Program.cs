@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using ParsnipData.Media;
 using ParsnipData;
+using System.Collections.Generic;
 
 namespace ParsnipMediaUploader
 {
@@ -34,6 +35,8 @@ namespace ParsnipMediaUploader
             
             var errorCount = 0;
             var currentFile = 0;
+            var mediaIds = new List<MediaId>();
+            IEnumerable<MediaTag> mediaTags = null;
             foreach (var file in files)
             {
                 currentFile++;
@@ -61,6 +64,9 @@ namespace ParsnipMediaUploader
                         File.Copy(file.FullName, $"{(isImage ? Configuration.BackupDir : Configuration.VideoBackupDirOverride)}Originals\\{mediaId}{originalExtension}");
 
                         (isImage ? processImage() : processVideo()).InsertTags(Configuration.MediaTags);
+
+                        mediaIds.Add(mediaId);
+                        mediaTags = mediaTags ?? Media.Select(mediaId).MediaTagPairs.Select(p => p.MediaTag);
 
                         var successLogMessage = $"\r[{DateTime.Now}] {fileName} - Success";
                         appendToLog(logDir, successLogMessage);
@@ -124,6 +130,7 @@ namespace ParsnipMediaUploader
             }
 
             var finalMessage = $"{currentFile}/{totalFiles} - Done";
+
             ConsoleColor finalMessageColor;
             if (errorCount > 0)
             {
@@ -133,6 +140,10 @@ namespace ParsnipMediaUploader
             else finalMessageColor = ConsoleColor.Green;
 
             Helpers.OverwriteColorWriteLine(finalMessage, finalMessageColor);
+            Console.WriteLine();
+            Helpers.OverwriteColorWriteLine("URLs:", ConsoleColor.Yellow);
+            mediaTags.ToList().ForEach(t => Helpers.OverwriteColorWriteLine($"#{t.Name} (https://{Configuration.Website}/tag?id={t.Id})", ConsoleColor.Yellow));
+            mediaIds.ToList().ForEach(id => Helpers.OverwriteColorWriteLine($"https://{Configuration.Website}/view?id={id} / https://{Configuration.Website}/edit?id={id}", ConsoleColor.Yellow));
             Console.ReadLine();
         }
     }
